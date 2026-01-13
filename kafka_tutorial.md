@@ -1,1 +1,1 @@
-Can be found at: [insert_link_here]
+The Kafka tutorial can be found  [here](https://github.com/andrei45635/kafka_tutorial_soa)
