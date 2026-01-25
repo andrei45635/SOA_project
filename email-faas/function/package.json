@@ -1,0 +1,11 @@
+{
+  "name": "email-function",
+  "version": "1.0.0",
+  "main": "handler.js",
+  "scripts": {
+    "start": "node handler.js"
+  },
+  "dependencies": {
+    "uuid": "^9.0.1"
+  }
+}

@@ -1,0 +1,18 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: http://gateway:8080
+
+functions:
+  send-email:
+    lang: node18
+    handler: ./function
+    image: email-function:latest
+    environment:
+      NODE_ENV: production
+    labels:
+      com.openfaas.scale.min: "0"
+      com.openfaas.scale.max: "10"
+      com.openfaas.scale.zero: "true"
+    annotations:
+      topic: "email.queue"

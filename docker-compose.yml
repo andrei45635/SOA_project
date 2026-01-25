@@ -1,11 +1,4 @@
-version: '3.8'
-
 services:
-  # ===========================================
-  # INFRASTRUCTURE SERVICES
-  # ===========================================
-  
-  # PostgreSQL Database
   postgres:
     image: postgres:15-alpine
     container_name: postgres
@@ -25,7 +18,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # Redis for WebSocket scaling and caching
   redis:
     image: redis:7-alpine
     container_name: redis
@@ -39,7 +31,6 @@ services:
       timeout: 5s
       retries: 5
 
-  # RabbitMQ Message Broker
   rabbitmq:
     image: rabbitmq:3-management-alpine
     container_name: rabbitmq
@@ -47,8 +38,8 @@ services:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin123
     ports:
-      - "5672:5672"   # AMQP protocol
-      - "15672:15672" # Management UI
+      - "5672:5672"
+      - "15672:15672"
     networks:
       - microservices-network
     healthcheck:
@@ -57,7 +48,6 @@ services:
       timeout: 10s
       retries: 5
 
-  # Zookeeper for Kafka
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -69,7 +59,6 @@ services:
     networks:
       - microservices-network
 
-  # Kafka Event Streaming
   kafka:
     image: confluentinc/cp-kafka:7.5.0
     container_name: kafka
@@ -89,9 +78,6 @@ services:
     networks:
       - microservices-network
 
-  # ===========================================
-  # NGINX LOAD BALANCER
-  # ===========================================
   nginx:
     image: nginx:alpine
     container_name: nginx
@@ -105,11 +91,6 @@ services:
     networks:
       - microservices-network
 
-  # ===========================================
-  # MICROSERVICES
-  # ===========================================
-
-  # API Gateway (Instance 1 - for load balancing)
   api-gateway-1:
     build:
       context: ./api-gateway
@@ -125,14 +106,17 @@ services:
       ORDER_SERVICE_URL: http://order-service:3001
       NOTIFICATION_SERVICE_URL: http://notification-service:3002
     depends_on:
-      - redis
-      - rabbitmq
-      - order-service
-      - notification-service
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
     networks:
       - microservices-network
 
-  # API Gateway (Instance 2 - for load balancing)
   api-gateway-2:
     build:
       context: ./api-gateway
@@ -148,14 +132,17 @@ services:
       ORDER_SERVICE_URL: http://order-service:3001
       NOTIFICATION_SERVICE_URL: http://notification-service:3002
     depends_on:
-      - redis
-      - rabbitmq
-      - order-service
-      - notification-service
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      order-service:
+        condition: service_started
+      notification-service:
+        condition: service_started
     networks:
       - microservices-network
 
-  # Order Service
   order-service:
     build:
       context: ./order-service
@@ -177,7 +164,6 @@ services:
     networks:
       - microservices-network
 
-  # Notification Service
   notification-service:
     build:
       context: ./notification-service
@@ -196,7 +182,6 @@ services:
     networks:
       - microservices-network
 
-  # Analytics Service (Kafka Consumer)
   analytics-service:
     build:
       context: ./analytics-service
@@ -215,23 +200,37 @@ services:
     networks:
       - microservices-network
 
-  # Email FaaS (Function as a Service)
-  email-faas:
+  email-function:
     build:
       context: ./email-faas
       dockerfile: Dockerfile
-    container_name: email-faas
-    environment:
-      NODE_ENV: production
-      PORT: 3004
-      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
+    container_name: email-function
+    ports:
+      - "8082:8080"
+    labels:
+      - "faas.function=true"
+      - "faas.scale.min=0"
+      - "faas.scale.max=10"
     networks:
       - microservices-network
 
-  # Web Application
+  faas-connector:
+    build:
+      context: ./faas-connector
+      dockerfile: Dockerfile
+    container_name: faas-connector
+    environment:
+      RABBITMQ_URL: amqp://admin:admin123@rabbitmq:5672
+      OPENFAAS_GATEWAY: http://email-function:8080
+      FUNCTION_NAME: ""
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      email-function:
+        condition: service_started
+    networks:
+      - microservices-network
+
   web-app:
     build:
       context: ./web-app
@@ -246,10 +245,6 @@ services:
       - nginx
     networks:
       - microservices-network
-
-# ===========================================
-# NETWORKS AND VOLUMES
-# ===========================================
 
 networks:
   microservices-network:
