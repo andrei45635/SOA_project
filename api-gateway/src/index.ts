@@ -80,7 +80,7 @@ async function bootstrap() {
         await rabbitMQService.connect();
         //todo: kinda weird
         await setupWebSocket(httpServer, redisClient as any, redisSubscriber as any);
-        await rabbitMQService.subscribeToNotification((notification) => {
+        await rabbitMQService.subscribeToNotifications((notification) => {
             console.log(`Received notification for user ${notification.userId}`);
             sendNotificationToUser(notification.userId, notification);
         });

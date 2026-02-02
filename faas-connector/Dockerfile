@@ -3,10 +3,12 @@ FROM node:20-alpine AS builder
 WORKDIR /app
 
 COPY package*.json ./
+COPY tsconfig.json ./
 
-RUN npm ci
+#RUN npm ci
+RUN npm install
 
-COPY . .
+COPY src ./src
 
 RUN npm run build
 
@@ -16,7 +18,8 @@ WORKDIR /app
 
 COPY package*.json ./
 
-RUN npm ci --only=production
+#RUN npm ci --only=production
+RUN npm install
 
 COPY --from=builder /app/dist ./dist
 

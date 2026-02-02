@@ -1,11 +1,11 @@
-import amqp, { Channel, Connection } from 'amqplib';
+import amqp from 'amqplib';
 import { config } from '../config';
 import { NotificationEvent, OrderEvent } from '../types';
 import { redisService } from './redis.service';
 
 class RabbitMQService {
-    private connection: Connection | null = null;
-    private channel: Channel | null = null;
+    private connection = null;
+    private channel = null;
 
     private readonly EXCHANGES = {
         NOTIFICATIONS: 'notifications.exchange',

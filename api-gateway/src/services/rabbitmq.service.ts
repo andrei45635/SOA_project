@@ -1,10 +1,10 @@
-import amqp, { Channel, Connection } from 'amqplib';
+import amqp from 'amqplib';
 import { config } from '../config';
 import { NotificationEvent, OrderEvent } from '../types';
 
 export class RabbitMQService {
-    private connection: Connection | null = null;
-    private channel: Channel | null = null;
+    private connection = null;
+    private channel = null;
 
     private readonly EXCHANGES = {
         ORDERS: 'orders.exchange',

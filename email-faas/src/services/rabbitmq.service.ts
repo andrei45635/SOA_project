@@ -1,11 +1,11 @@
-import amqp, { Channel, Connection } from 'amqplib';
+import amqp from 'amqplib';
 import { config } from '../config';
 import { EmailRequest } from '../types';
 import { emailService } from './email.service';
 
 class RabbitMQService {
-    private connection: Connection | null = null;
-    private channel: Channel | null = null;
+    private connection = null;
+    private channel = null;
 
     private readonly EXCHANGES = {
         EMAIL: 'email.exchange',

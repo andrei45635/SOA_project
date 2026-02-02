@@ -1,4 +1,4 @@
-import amqp, { Channel, Connection } from 'amqplib';
+import amqp from 'amqplib';
 import axios from 'axios';
 import dotenv from 'dotenv';
 
@@ -15,8 +15,8 @@ const config = {
 };
 
 class FaaSConnector {
-    private connection: Connection | null = null;
-    private channel: Channel | null = null;
+    private connection: amqp.ChannelModel;
+    private channel: amqp.Channel;
 
     private readonly EXCHANGE = 'email.exchange';
     private readonly QUEUE = 'email.queue';

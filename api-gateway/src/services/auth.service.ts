@@ -63,6 +63,7 @@ export class AuthService {
             role: user.role,
         };
 
+        // @ts-ignore
         return jwt.sign(payload, config.jwt.secret, {
             expiresIn: config.jwt.expiresIn,
         });

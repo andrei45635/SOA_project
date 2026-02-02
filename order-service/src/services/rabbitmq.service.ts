@@ -1,10 +1,12 @@
-import amqp, { Channel, Connection } from 'amqplib';
+import amqp from 'amqplib';
 import { config } from '../config';
 import { OrderEvent } from '../types';
 
 class RabbitMQService {
-    private connection: Connection | null = null;
-    private channel: Channel | null = null;
+    //@ts-ignore
+    private connection: amqp.ChannelModel;
+    //@ts-ignore
+    private channel: amqp.Channel;
 
     private readonly EXCHANGES = {
         ORDERS: 'orders.exchange',
