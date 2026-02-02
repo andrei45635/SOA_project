@@ -1,7 +1,7 @@
 import { io, Socket } from 'socket.io-client';
 import { Notification } from '../types';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost';
+const WS_URL = import.meta.env.VITE_WS_URL || 'ws://localhost:8083';
 
 type NotificationCallback = (notification: Notification) => void;
 

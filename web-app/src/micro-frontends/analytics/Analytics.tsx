@@ -14,9 +14,12 @@ export function AnalyticsMicroFrontend() {
   const loadAnalytics = async () => {
     try {
       setLoading(true);
+      setError(null);
       const data = await apiService.getAnalytics();
+      console.log('Analytics data:', data);
       setDashboard(data);
     } catch (err) {
+      console.error('Analytics error:', err);
       setError(err instanceof Error ? err.message : 'Failed to load analytics');
     } finally {
       setLoading(false);
@@ -25,120 +28,149 @@ export function AnalyticsMicroFrontend() {
 
   if (loading) return <div style={styles.loading}>Loading analytics...</div>;
   if (error) return <div style={styles.error}>{error}</div>;
-  if (!dashboard) return null;
+  if (!dashboard) return <div style={styles.error}>No data available</div>;
+
+  const summary = dashboard.summary || {
+    totalOrders: 0,
+    totalRevenue: 0,
+    averageOrderValue: 0,
+    cancelledOrders: 0,
+    cancellationRate: 0,
+  };
+
+  const dailyStats = dashboard.dailyStats || [];
+  const topUsers = dashboard.topUsers || [];
+  const ordersByStatus = dashboard.ordersByStatus || {};
+  const recentEvents = dashboard.recentEvents || [];
 
   return (
-    <div style={styles.container}>
-      <h1>Analytics Dashboard</h1>
+      <div style={styles.container}>
+        <h1>Analytics Dashboard</h1>
 
-      <div style={styles.summaryGrid}>
-        <div style={styles.summaryCard}>
-          <h3>Total Orders</h3>
-          <p style={styles.summaryValue}>{dashboard.summary.totalOrders}</p>
-        </div>
-        <div style={styles.summaryCard}>
-          <h3>Total Revenue</h3>
-          <p style={styles.summaryValue}>${dashboard.summary.totalRevenue.toFixed(2)}</p>
-        </div>
-        <div style={styles.summaryCard}>
-          <h3>Avg Order Value</h3>
-          <p style={styles.summaryValue}>${dashboard.summary.averageOrderValue.toFixed(2)}</p>
-        </div>
-        <div style={styles.summaryCard}>
-          <h3>Cancellation Rate</h3>
-          <p style={styles.summaryValue}>{dashboard.summary.cancellationRate.toFixed(1)}%</p>
-        </div>
-      </div>
-
-      <div style={styles.chartsRow}>
-        <div style={styles.chartCard}>
-          <h3>Orders by Status</h3>
-          <div style={styles.statusBars}>
-            {Object.entries(dashboard.ordersByStatus).map(([status, count]) => (
-              <div key={status} style={styles.statusBar}>
-                <span style={styles.statusLabel}>{status}</span>
-                <div style={styles.barContainer}>
-                  <div
-                    style={{
-                      ...styles.bar,
-                      width: `${Math.min(100, (count / Math.max(...Object.values(dashboard.ordersByStatus))) * 100)}%`,
-                      backgroundColor: getStatusColor(status),
-                    }}
-                  />
-                </div>
-                <span style={styles.statusCount}>{count}</span>
-              </div>
-            ))}
+        <div style={styles.summaryGrid}>
+          <div style={styles.summaryCard}>
+            <h3>Total Orders</h3>
+            <p style={styles.summaryValue}>{summary.totalOrders}</p>
+          </div>
+          <div style={styles.summaryCard}>
+            <h3>Total Revenue</h3>
+            <p style={styles.summaryValue}>${(summary.totalRevenue || 0).toFixed(2)}</p>
+          </div>
+          <div style={styles.summaryCard}>
+            <h3>Avg Order Value</h3>
+            <p style={styles.summaryValue}>${(summary.averageOrderValue || 0).toFixed(2)}</p>
+          </div>
+          <div style={styles.summaryCard}>
+            <h3>Cancellation Rate</h3>
+            <p style={styles.summaryValue}>{(summary.cancellationRate || 0).toFixed(1)}%</p>
           </div>
         </div>
 
-        <div style={styles.chartCard}>
-          <h3>Top Customers</h3>
-          <table style={styles.table}>
-            <thead>
-              <tr>
-                <th>User ID</th>
-                <th>Orders</th>
-                <th>Total Spent</th>
-              </tr>
-            </thead>
-            <tbody>
-              {dashboard.topUsers.slice(0, 5).map(user => (
-                <tr key={user.userId}>
-                  <td>{user.userId.slice(0, 8)}...</td>
-                  <td>{user.totalOrders}</td>
-                  <td>${user.totalSpent.toFixed(2)}</td>
+        <div style={styles.chartsRow}>
+          <div style={styles.chartCard}>
+            <h3>Orders by Status</h3>
+            {Object.keys(ordersByStatus).length === 0 ? (
+                <p>No order data yet</p>
+            ) : (
+                <div style={styles.statusBars}>
+                  {Object.entries(ordersByStatus).map(([status, count]) => (
+                      <div key={status} style={styles.statusBar}>
+                        <span style={styles.statusLabel}>{status}</span>
+                        <div style={styles.barContainer}>
+                          <div
+                              style={{
+                                ...styles.bar,
+                                width: `${Math.min(100, (count / Math.max(...Object.values(ordersByStatus))) * 100)}%`,
+                                backgroundColor: getStatusColor(status),
+                              }}
+                          />
+                        </div>
+                        <span style={styles.statusCount}>{count}</span>
+                      </div>
+                  ))}
+                </div>
+            )}
+          </div>
+
+          <div style={styles.chartCard}>
+            <h3>Top Customers</h3>
+            {topUsers.length === 0 ? (
+                <p>No customer data yet</p>
+            ) : (
+                <table style={styles.table}>
+                  <thead>
+                  <tr>
+                    <th>User ID</th>
+                    <th>Orders</th>
+                    <th>Total Spent</th>
+                  </tr>
+                  </thead>
+                  <tbody>
+                  {topUsers.slice(0, 5).map(user => (
+                      <tr key={user.userId}>
+                        <td>{user.userId.slice(0, 8)}...</td>
+                        <td>{user.totalOrders}</td>
+                        <td>${(user.totalSpent || 0).toFixed(2)}</td>
+                      </tr>
+                  ))}
+                  </tbody>
+                </table>
+            )}
+          </div>
+        </div>
+
+        <div style={styles.recentSection}>
+          <h3>Recent Events</h3>
+          {recentEvents.length === 0 ? (
+              <p>No recent events</p>
+          ) : (
+              <div style={styles.eventsList}>
+                {recentEvents.slice(0, 10).map((event, i) => (
+                    <div key={i} style={styles.eventItem}>
+                <span style={{ ...styles.eventType, backgroundColor: getEventColor(event.eventType) }}>
+                  {event.eventType.replace('ORDER_', '')}
+                </span>
+                      <span style={styles.eventOrder}>#{event.orderId.slice(0, 8)}</span>
+                      {event.amount && <span style={styles.eventAmount}>${event.amount.toFixed(2)}</span>}
+                      <span style={styles.eventTime}>
+                  {new Date(event.timestamp).toLocaleString()}
+                </span>
+                    </div>
+                ))}
+              </div>
+          )}
+        </div>
+
+        <div style={styles.dailySection}>
+          <h3>Daily Stats (Last 30 Days)</h3>
+          {dailyStats.length === 0 ? (
+              <p>No daily stats yet</p>
+          ) : (
+              <table style={styles.table}>
+                <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Orders</th>
+                  <th>Revenue</th>
+                  <th>Cancelled</th>
+                  <th>Avg Value</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                {dailyStats.map(day => (
+                    <tr key={day.date}>
+                      <td>{day.date}</td>
+                      <td>{day.totalOrders}</td>
+                      <td>${(day.totalRevenue || 0).toFixed(2)}</td>
+                      <td>{day.cancelledOrders}</td>
+                      <td>${(day.averageOrderValue || 0).toFixed(2)}</td>
+                    </tr>
+                ))}
+                </tbody>
+              </table>
+          )}
         </div>
       </div>
-
-      <div style={styles.recentSection}>
-        <h3>Recent Events</h3>
-        <div style={styles.eventsList}>
-          {dashboard.recentEvents.slice(0, 10).map((event, i) => (
-            <div key={i} style={styles.eventItem}>
-              <span style={{ ...styles.eventType, backgroundColor: getEventColor(event.eventType) }}>
-                {event.eventType.replace('ORDER_', '')}
-              </span>
-              <span style={styles.eventOrder}>#{event.orderId.slice(0, 8)}</span>
-              {event.amount && <span style={styles.eventAmount}>${event.amount.toFixed(2)}</span>}
-              <span style={styles.eventTime}>
-                {new Date(event.timestamp).toLocaleString()}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div style={styles.dailySection}>
-        <h3>Daily Stats (Last 30 Days)</h3>
-        <table style={styles.table}>
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Orders</th>
-              <th>Revenue</th>
-              <th>Cancelled</th>
-              <th>Avg Value</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dashboard.dailyStats.map(day => (
-              <tr key={day.date}>
-                <td>{day.date}</td>
-                <td>{day.totalOrders}</td>
-                <td>${day.totalRevenue.toFixed(2)}</td>
-                <td>{day.cancelledOrders}</td>
-                <td>${day.averageOrderValue.toFixed(2)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
   );
 }
 

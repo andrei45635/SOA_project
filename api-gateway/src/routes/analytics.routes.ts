@@ -19,6 +19,7 @@ router.get('/dashboard', async (req: Request, res: Response) => {
         res.json(response.data);
     } catch (error) {
         // If analytics service is not available, return mock data
+        console.log('ERROR WTF', error);
         res.json({
             success: true,
             data: {
