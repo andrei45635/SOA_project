@@ -15,6 +15,7 @@ class WebSocketService {
     this.socket = io(WS_URL, {
       auth: { token },
       transports: ['websocket', 'polling'],
+      path: '/ws'
     });
 
     this.socket.on('connect', () => {
