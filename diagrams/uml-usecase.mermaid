@@ -1,0 +1,81 @@
+graph TB
+    subgraph "Order Management System - Use Case Diagram"
+        
+        Customer["👤 Customer"]
+        Admin["👑 Admin"]
+        
+        subgraph "Authentication"
+            UC1(("Register"))
+            UC2(("Login"))
+            UC3(("Logout"))
+        end
+        
+        subgraph "Order Management"
+            UC4(("Browse Menu"))
+            UC5(("Add to Cart"))
+            UC6(("Place Order"))
+            UC7(("View My Orders"))
+            UC8(("Cancel Order"))
+            UC9(("View All Orders"))
+            UC10(("Update Order Status"))
+        end
+        
+        subgraph "Notifications"
+            UC11(("Receive Notifications"))
+            UC12(("Mark as Read"))
+            UC13(("Clear Notifications"))
+        end
+        
+        subgraph "Analytics"
+            UC14(("View Dashboard"))
+            UC15(("View Order Statistics"))
+            UC16(("View Revenue Reports"))
+        end
+        
+        subgraph "System Actors"
+            EmailSystem["📧 Email System"]
+            KafkaSystem["📡 Kafka"]
+        end
+    end
+    
+    %% Customer Use Cases
+    Customer --> UC1
+    Customer --> UC2
+    Customer --> UC3
+    Customer --> UC4
+    Customer --> UC5
+    Customer --> UC6
+    Customer --> UC7
+    Customer --> UC8
+    Customer --> UC11
+    Customer --> UC12
+    Customer --> UC13
+    
+    %% Admin Use Cases (inherits Customer + additional)
+    Admin --> UC2
+    Admin --> UC3
+    Admin --> UC4
+    Admin --> UC5
+    Admin --> UC6
+    Admin --> UC7
+    Admin --> UC9
+    Admin --> UC10
+    Admin --> UC11
+    Admin --> UC14
+    Admin --> UC15
+    Admin --> UC16
+    
+    %% System relationships
+    UC6 -.->|"triggers"| EmailSystem
+    UC6 -.->|"publishes event"| KafkaSystem
+    UC10 -.->|"triggers"| EmailSystem
+    UC10 -.->|"publishes event"| KafkaSystem
+    
+    %% Include relationships
+    UC6 -.->|"<<include>>"| UC5
+    UC5 -.->|"<<include>>"| UC4
+    
+    style Customer fill:#08427b,color:#fff
+    style Admin fill:#08427b,color:#fff
+    style EmailSystem fill:#999,color:#fff
+    style KafkaSystem fill:#231f20,color:#fff

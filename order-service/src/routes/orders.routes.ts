@@ -326,11 +326,31 @@ router.get('/analytics/dashboard', async (req: Request, res: Response) => {
         const analytics = await databaseService.getAnalytics();
         const recentOrders = await databaseService.getAllOrders();
 
+        const cancelledCount = analytics.ordersByStatus.cancelled || 0;
+        const totalOrders = analytics.totalOrders || 0;
+        const totalRevenue = analytics.totalRevenue || 0;
+
         res.json({
             success: true,
             data: {
-                ...analytics,
-                recentOrders: recentOrders.slice(0, 10),
+                summary: {
+                    totalOrders,
+                    totalRevenue,
+                    averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+                    cancelledOrders: cancelledCount,
+                    cancellationRate: totalOrders > 0 ? (cancelledCount / totalOrders) * 100 : 0,
+                },
+                dailyStats: [],
+                topUsers: [],
+                ordersByStatus: analytics.ordersByStatus,
+                recentEvents: recentOrders.slice(0, 10).map(order => ({
+                    eventType: 'ORDER_CREATED',
+                    orderId: order.id,
+                    userId: order.userId,
+                    amount: order.totalAmount,
+                    status: order.status,
+                    timestamp: order.createdAt,
+                })),
             },
         });
     } catch (error) {

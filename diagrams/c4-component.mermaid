@@ -1,0 +1,62 @@
+graph TB
+    subgraph "C4 Component Diagram - Backend Services"
+        
+        subgraph "API Gateway"
+            AuthMiddleware["🔐 Auth Middleware<br/>JWT verification"]
+            AuthRoutes["👤 Auth Routes<br/>/api/auth/*"]
+            OrderRoutes["📦 Order Routes<br/>/api/orders/*"]
+            AnalyticsRoutes["📊 Analytics Routes<br/>/api/analytics/*"]
+            AuthService["🔑 Auth Service<br/>User management"]
+            RabbitMQService_GW["🐰 RabbitMQ Service<br/>Message publishing"]
+            RedisService_GW["⚡ Redis Service<br/>Session management"]
+            WebSocketService["🔌 WebSocket Service<br/>Real-time push"]
+        end
+        
+        subgraph "Order Service"
+            OrderRoutesImpl["📋 Order Routes<br/>CRUD operations"]
+            DatabaseService["🗄️ Database Service<br/>PostgreSQL client"]
+            KafkaService_Order["📡 Kafka Service<br/>Event publishing"]
+            RabbitMQService_Order["🐰 RabbitMQ Service<br/>Notification triggers"]
+        end
+        
+        subgraph "Notification Service"
+            RabbitMQService_Notif["🐰 RabbitMQ Service<br/>Queue consumer"]
+            RedisService_Notif["⚡ Redis Service<br/>Pub/Sub broadcaster"]
+        end
+        
+        subgraph "Analytics Service"
+            KafkaService_Analytics["📡 Kafka Service<br/>Event consumer"]
+            DatabaseService_Analytics["🗄️ Database Service<br/>Aggregation queries"]
+        end
+        
+        subgraph "FaaS Layer"
+            FaaSIndex["🔗 FaaS Connector<br/>Queue bridge"]
+            EmailHandler["📧 Email Handler<br/>of-watchdog function"]
+        end
+    end
+    
+    AuthMiddleware --> AuthService
+    AuthRoutes --> AuthService
+    AuthService --> RedisService_GW
+    
+    OrderRoutes --> AuthMiddleware
+    OrderRoutes --> RabbitMQService_GW
+    AnalyticsRoutes --> AuthMiddleware
+    
+    WebSocketService --> RedisService_GW
+    
+    OrderRoutesImpl --> DatabaseService
+    OrderRoutesImpl --> KafkaService_Order
+    OrderRoutesImpl --> RabbitMQService_Order
+    
+    RabbitMQService_Notif --> RedisService_Notif
+    
+    KafkaService_Analytics --> DatabaseService_Analytics
+    
+    FaaSIndex --> EmailHandler
+    
+    style AuthMiddleware fill:#e74c3c,color:#fff
+    style OrderRoutesImpl fill:#f39c12,color:#fff
+    style RabbitMQService_Notif fill:#1abc9c,color:#fff
+    style KafkaService_Analytics fill:#9b59b6,color:#fff
+    style EmailHandler fill:#8e44ad,color:#fff

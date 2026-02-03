@@ -1,0 +1,98 @@
+graph TB
+    subgraph "UML Deployment Diagram - Docker Containers"
+        
+        subgraph "Browser"
+            Browser["🌐 Web Browser"]
+        end
+        
+        subgraph "Docker Network: microservices-network"
+            
+            subgraph "Frontend Containers"
+                MFEShell["📦 mfe-shell<br/>nginx:alpine<br/>Port 5000<br/>---<br/>Shell Application"]
+                MFEOrders["📦 mfe-orders<br/>nginx:alpine<br/>Port 5001<br/>---<br/>Orders MFE"]
+                MFEAnalytics["📦 mfe-analytics<br/>nginx:alpine<br/>Port 5002<br/>---<br/>Analytics MFE"]
+                MFENotifications["📦 mfe-notifications<br/>nginx:alpine<br/>Port 5003<br/>---<br/>Notifications MFE"]
+            end
+            
+            subgraph "Load Balancer"
+                NGINX["📦 nginx<br/>nginx:alpine<br/>Port 8083→80<br/>---<br/>Load Balancer"]
+            end
+            
+            subgraph "API Containers"
+                APIGateway1["📦 api-gateway-1<br/>node:20-alpine<br/>Port 3000<br/>---<br/>Express.js<br/>Socket.io"]
+                APIGateway2["📦 api-gateway-2<br/>node:20-alpine<br/>Port 3000<br/>---<br/>Express.js<br/>Socket.io"]
+            end
+            
+            subgraph "Service Containers"
+                OrderService["📦 order-service<br/>node:20-alpine<br/>Port 3001<br/>---<br/>Express.js<br/>pg, kafkajs, amqplib"]
+                NotificationService["📦 notification-service<br/>node:20-alpine<br/>Port 3002<br/>---<br/>ioredis, amqplib"]
+                AnalyticsService["📦 analytics-service<br/>node:20-alpine<br/>Port 3003<br/>---<br/>kafkajs, pg"]
+            end
+            
+            subgraph "FaaS Containers"
+                FaaSConnector["📦 faas-connector<br/>node:20-alpine<br/>---<br/>RabbitMQ consumer<br/>HTTP invoker"]
+                EmailFunction["📦 email-function<br/>node:20-alpine<br/>Port 8082→8080<br/>---<br/>of-watchdog<br/>Serverless function"]
+            end
+            
+            subgraph "Data Containers"
+                PostgreSQL["📦 postgres<br/>postgres:15-alpine<br/>Port 5432<br/>---<br/>Volume: postgres_data"]
+                Redis["📦 redis<br/>redis:7-alpine<br/>Port 6379"]
+                RabbitMQ["📦 rabbitmq<br/>rabbitmq:3-management<br/>Port 5672, 15672"]
+                Kafka["📦 kafka<br/>confluentinc/cp-kafka:7.5.0<br/>Port 9092, 29092"]
+                Zookeeper["📦 zookeeper<br/>confluentinc/cp-zookeeper:7.5.0<br/>Port 2181"]
+            end
+        end
+    end
+    
+    Browser --> MFEShell
+    MFEShell -.->|"remoteEntry.js"| MFEOrders
+    MFEShell -.->|"remoteEntry.js"| MFEAnalytics
+    MFEShell -.->|"remoteEntry.js"| MFENotifications
+    
+    Browser -->|"HTTP :8083"| NGINX
+    
+    NGINX --> APIGateway1
+    NGINX --> APIGateway2
+    
+    APIGateway1 --> OrderService
+    APIGateway1 --> NotificationService
+    APIGateway1 --> Redis
+    APIGateway1 --> RabbitMQ
+    
+    APIGateway2 --> OrderService
+    APIGateway2 --> NotificationService
+    APIGateway2 --> Redis
+    APIGateway2 --> RabbitMQ
+    
+    OrderService --> PostgreSQL
+    OrderService --> RabbitMQ
+    OrderService --> Kafka
+    
+    NotificationService --> Redis
+    NotificationService --> RabbitMQ
+    
+    AnalyticsService --> PostgreSQL
+    AnalyticsService --> Kafka
+    
+    FaaSConnector --> RabbitMQ
+    FaaSConnector --> EmailFunction
+    
+    Kafka --> Zookeeper
+    
+    style MFEShell fill:#2ecc71,color:#fff
+    style MFEOrders fill:#3498db,color:#fff
+    style MFEAnalytics fill:#e67e22,color:#fff
+    style MFENotifications fill:#1abc9c,color:#fff
+    style NGINX fill:#9b59b6,color:#fff
+    style APIGateway1 fill:#e74c3c,color:#fff
+    style APIGateway2 fill:#e74c3c,color:#fff
+    style OrderService fill:#f39c12,color:#fff
+    style NotificationService fill:#f39c12,color:#fff
+    style AnalyticsService fill:#f39c12,color:#fff
+    style PostgreSQL fill:#336791,color:#fff
+    style Redis fill:#dc382d,color:#fff
+    style RabbitMQ fill:#ff6600,color:#fff
+    style Kafka fill:#231f20,color:#fff
+    style Zookeeper fill:#231f20,color:#fff
+    style EmailFunction fill:#8e44ad,color:#fff
+    style FaaSConnector fill:#8e44ad,color:#fff

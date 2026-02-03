@@ -1,0 +1,65 @@
+sequenceDiagram
+    autonumber
+    participant A as 👑 Admin
+    participant Shell as 🏠 Shell MFE
+    participant Orders as 📦 Orders MFE
+    participant NGINX as ⚖️ NGINX
+    participant GW as 🚪 API Gateway
+    participant OS as 📋 Order Service
+    participant PG as 🐘 PostgreSQL
+    participant RMQ as 🐰 RabbitMQ
+    participant Kafka as 📡 Kafka
+    participant NS as 📨 Notification Service
+    participant Redis as ⚡ Redis
+    participant AS as 📈 Analytics Service
+
+    Note over A, AS: Admin Order Status Update Flow
+    
+    A->>Shell: Navigate to Orders
+    Shell->>Orders: Load Orders MFE
+    
+    A->>Orders: Click "Admin Panel"
+    Orders->>NGINX: GET /api/orders/admin/all
+    NGINX->>GW: Route request
+    GW->>GW: Verify JWT + Admin role
+    GW->>OS: GET /orders/all
+    OS->>PG: SELECT * FROM orders
+    PG-->>OS: All orders
+    OS-->>GW: Orders list
+    GW-->>NGINX: Response
+    NGINX-->>Orders: Orders data
+    Orders-->>A: Display all orders with status buttons
+    
+    A->>Orders: Click "→ confirmed" on order
+    Orders->>NGINX: PUT /api/orders/{id} {status: "confirmed"}
+    NGINX->>GW: Route request
+    GW->>GW: Verify JWT + Admin role
+    GW->>OS: PUT /orders/{id}
+    
+    OS->>PG: UPDATE orders SET status = 'confirmed'
+    PG-->>OS: Order updated
+    
+    par Publish Events
+        OS->>Kafka: Publish ORDER_UPDATED event
+        OS->>RMQ: Publish to order.events
+        OS->>RMQ: Publish to notification.queue
+    end
+    
+    OS-->>GW: 200 OK {updated order}
+    GW->>RMQ: Publish WebSocket notification
+    
+    par Real-time Updates
+        RMQ->>NS: Consume notification
+        NS->>Redis: PUBLISH to channel
+        Redis->>GW: Notification event
+        GW->>Shell: WebSocket push to customer
+    and Analytics Update
+        Kafka->>AS: Consume ORDER_UPDATED
+        AS->>PG: Update analytics aggregations
+    end
+    
+    GW-->>NGINX: Response
+    NGINX-->>Orders: Updated order
+    Orders-->>A: Update status badge to "confirmed"
+    
+    Note over A, AS: Customer receives real-time notification

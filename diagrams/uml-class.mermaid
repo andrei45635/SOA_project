@@ -1,0 +1,188 @@
+classDiagram
+    direction TB
+    
+    %% ==================
+    %% DOMAIN ENTITIES
+    %% ==================
+    
+    class User {
+        +string id
+        +string email
+        +string name
+        +string passwordHash
+        +UserRole role
+        +Date createdAt
+    }
+    
+    class Order {
+        +string id
+        +string userId
+        +OrderItem[] items
+        +OrderStatus status
+        +number totalAmount
+        +Date createdAt
+        +Date updatedAt
+    }
+    
+    class OrderItem {
+        +string productId
+        +string productName
+        +number quantity
+        +number price
+    }
+    
+    class Notification {
+        +string id
+        +string userId
+        +NotificationType type
+        +string title
+        +string message
+        +object data
+        +boolean read
+        +Date createdAt
+    }
+    
+    class AnalyticsEvent {
+        +string eventType
+        +string orderId
+        +string userId
+        +number amount
+        +string status
+        +Date timestamp
+    }
+    
+    class AnalyticsDashboard {
+        +AnalyticsSummary summary
+        +DailyStats[] dailyStats
+        +UserStats[] topUsers
+        +object ordersByStatus
+        +AnalyticsEvent[] recentEvents
+    }
+    
+    %% ==================
+    %% ENUMERATIONS
+    %% ==================
+    
+    class UserRole {
+        <<enumeration>>
+        customer
+        admin
+    }
+    
+    class OrderStatus {
+        <<enumeration>>
+        pending
+        confirmed
+        preparing
+        ready
+        delivered
+        cancelled
+    }
+    
+    class NotificationType {
+        <<enumeration>>
+        EMAIL
+        PUSH
+        WEBSOCKET
+    }
+    
+    %% ==================
+    %% SERVICES
+    %% ==================
+    
+    class ApiService {
+        -AxiosInstance client
+        -string token
+        +setToken(token)
+        +getToken() string
+        +login(email, password) AuthResponse
+        +register(email, password, name) AuthResponse
+        +logout()
+        +getOrders() Order[]
+        +getAllOrders() Order[]
+        +createOrder(items) Order
+        +updateOrderStatus(id, status) Order
+        +cancelOrder(id)
+        +getAnalytics() AnalyticsDashboard
+    }
+    
+    class AuthService {
+        -Map users
+        +register(email, password, name) User
+        +login(email, password) AuthResponse
+        +verifyToken(token) User
+        +generateToken(user) string
+    }
+    
+    class DatabaseService {
+        -Pool pool
+        +connect()
+        +createOrder(order) Order
+        +getOrderById(id) Order
+        +getOrdersByUserId(userId) Order[]
+        +getAllOrders() Order[]
+        +updateOrderStatus(id, status) Order
+        +deleteOrder(id) boolean
+        +getAnalytics() AnalyticsData
+    }
+    
+    class KafkaService {
+        -Kafka kafka
+        -Producer producer
+        -boolean isConnected
+        +connect()
+        +publishOrderEvent(event)
+        +publishAnalyticsEvent(data)
+        +disconnect()
+    }
+    
+    class RabbitMQService {
+        -Connection connection
+        -Channel channel
+        +connect()
+        +publishOrderEvent(event)
+        +publishNotification(notification)
+        +publishEmailRequest(request)
+        +consumeQueue(queue, handler)
+    }
+    
+    class RedisService {
+        -RedisClient client
+        +connect()
+        +publish(channel, message)
+        +subscribe(channel, handler)
+        +set(key, value)
+        +get(key) string
+    }
+    
+    class WebSocketService {
+        -Socket socket
+        -Map listeners
+        +connect(token)
+        +disconnect()
+        +on(event, callback)
+        +off(event, callback)
+    }
+    
+    %% ==================
+    %% RELATIONSHIPS
+    %% ==================
+    
+    User "1" --> "*" Order : places
+    Order "1" --> "*" OrderItem : contains
+    User "1" --> "*" Notification : receives
+    Order "1" --> "*" AnalyticsEvent : generates
+    
+    User --> UserRole : has
+    Order --> OrderStatus : has
+    Notification --> NotificationType : has
+    
+    ApiService ..> Order : manages
+    ApiService ..> Notification : fetches
+    ApiService ..> AnalyticsDashboard : fetches
+    
+    AuthService ..> User : manages
+    DatabaseService ..> Order : persists
+    KafkaService ..> AnalyticsEvent : publishes
+    RabbitMQService ..> Notification : publishes
+    RedisService ..> Notification : broadcasts

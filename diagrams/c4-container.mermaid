@@ -1,0 +1,93 @@
+graph TB
+    subgraph "Order Management System - C4 Container Diagram"
+        
+        User["👤 Customer"]
+        Admin["👑 Admin"]
+        
+        subgraph "Micro-Frontends [Browser]"
+            Shell["🏠 Shell<br/>(React/Vite)<br/>Port 5000<br/>Host application,<br/>routing, auth"]
+            OrdersMFE["📦 Orders MFE<br/>(React/Vite)<br/>Port 5001<br/>Menu, cart, orders"]
+            AnalyticsMFE["📊 Analytics MFE<br/>(React/Vite)<br/>Port 5002<br/>Dashboard, reports"]
+            NotificationsMFE["🔔 Notifications MFE<br/>(React/Vite)<br/>Port 5003<br/>Real-time alerts"]
+        end
+        
+        subgraph "API Layer"
+            NGINX["⚖️ NGINX<br/>(Load Balancer)<br/>Port 8083<br/>Routes traffic"]
+            APIGateway1["🚪 API Gateway 1<br/>(Node.js/Express)<br/>Auth, routing, WebSocket"]
+            APIGateway2["🚪 API Gateway 2<br/>(Node.js/Express)<br/>Auth, routing, WebSocket"]
+        end
+        
+        subgraph "Backend Services"
+            OrderService["📋 Order Service<br/>(Node.js/Express)<br/>Port 3001<br/>Order CRUD, business logic"]
+            NotificationService["📨 Notification Service<br/>(Node.js)<br/>Port 3002<br/>Message processing"]
+            AnalyticsService["📈 Analytics Service<br/>(Node.js)<br/>Port 3003<br/>Kafka consumer, aggregation"]
+        end
+        
+        subgraph "FaaS Layer"
+            FaaSConnector["🔗 FaaS Connector<br/>(Node.js)<br/>RabbitMQ to OpenFaaS bridge"]
+            EmailFunction["📧 Email Function<br/>(Node.js + of-watchdog)<br/>Port 8082<br/>Serverless email sender"]
+        end
+        
+        subgraph "Data & Messaging"
+            PostgreSQL[("🐘 PostgreSQL<br/>Port 5432<br/>Orders, users")]
+            Redis[("⚡ Redis<br/>Port 6379<br/>Sessions, pub/sub")]
+            RabbitMQ["🐰 RabbitMQ<br/>Port 5672<br/>Message queues"]
+            Kafka["📡 Kafka<br/>Port 9092<br/>Event streaming"]
+            Zookeeper["🦓 Zookeeper<br/>Port 2181<br/>Kafka coordination"]
+        end
+    end
+    
+    User --> Shell
+    Admin --> Shell
+    Shell -.->|"Module Federation"| OrdersMFE
+    Shell -.->|"Module Federation"| AnalyticsMFE
+    Shell -.->|"Module Federation"| NotificationsMFE
+    
+    Shell -->|"HTTP/WebSocket"| NGINX
+    OrdersMFE -->|"HTTP"| NGINX
+    AnalyticsMFE -->|"HTTP"| NGINX
+    
+    NGINX -->|"Round Robin"| APIGateway1
+    NGINX -->|"Round Robin"| APIGateway2
+    
+    APIGateway1 --> OrderService
+    APIGateway1 --> NotificationService
+    APIGateway1 --> Redis
+    APIGateway1 --> RabbitMQ
+    
+    APIGateway2 --> OrderService
+    APIGateway2 --> NotificationService
+    APIGateway2 --> Redis
+    APIGateway2 --> RabbitMQ
+    
+    OrderService --> PostgreSQL
+    OrderService --> RabbitMQ
+    OrderService --> Kafka
+    
+    NotificationService --> Redis
+    NotificationService --> RabbitMQ
+    
+    AnalyticsService --> PostgreSQL
+    AnalyticsService --> Kafka
+    
+    FaaSConnector --> RabbitMQ
+    FaaSConnector --> EmailFunction
+    
+    Kafka --> Zookeeper
+    
+    style Shell fill:#2ecc71,color:#fff
+    style OrdersMFE fill:#3498db,color:#fff
+    style AnalyticsMFE fill:#e67e22,color:#fff
+    style NotificationsMFE fill:#1abc9c,color:#fff
+    style NGINX fill:#9b59b6,color:#fff
+    style APIGateway1 fill:#e74c3c,color:#fff
+    style APIGateway2 fill:#e74c3c,color:#fff
+    style OrderService fill:#f39c12,color:#fff
+    style NotificationService fill:#f39c12,color:#fff
+    style AnalyticsService fill:#f39c12,color:#fff
+    style EmailFunction fill:#8e44ad,color:#fff
+    style FaaSConnector fill:#8e44ad,color:#fff
+    style PostgreSQL fill:#336791,color:#fff
+    style Redis fill:#dc382d,color:#fff
+    style RabbitMQ fill:#ff6600,color:#fff
+    style Kafka fill:#231f20,color:#fff

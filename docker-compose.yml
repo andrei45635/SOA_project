@@ -88,7 +88,6 @@ services:
     depends_on:
       - api-gateway-1
       - api-gateway-2
-      - web-app
     networks:
       - microservices-network
 
@@ -232,18 +231,58 @@ services:
     networks:
       - microservices-network
 
-  web-app:
+  # =====================
+  # MICRO-FRONTENDS
+  # =====================
+
+  mfe-shell:
     build:
-      context: ./web-app
+      context: ./web-app/shell
       dockerfile: Dockerfile
-    container_name: web-app
+    container_name: mfe-shell
     ports:
-      - "8080:8080"
+      - "5000:5000"
     environment:
       VITE_API_URL: http://localhost:8083/api
-      VITE_WS_URL: ws://localhost:8083/ws
-#    depends_on:
-#      - nginx
+      VITE_WS_URL: http://localhost:8083
+    depends_on:
+      - mfe-orders
+      - mfe-analytics
+      - mfe-notifications
+    networks:
+      - microservices-network
+
+  mfe-orders:
+    build:
+      context: ./web-app/orders-mfe
+      dockerfile: Dockerfile
+    container_name: mfe-orders
+    ports:
+      - "5001:5001"
+    environment:
+      VITE_API_URL: http://localhost:8083/api
+    networks:
+      - microservices-network
+
+  mfe-analytics:
+    build:
+      context: ./web-app/analytics-mfe
+      dockerfile: Dockerfile
+    container_name: mfe-analytics
+    ports:
+      - "5002:5002"
+    environment:
+      VITE_API_URL: http://localhost:8083/api
+    networks:
+      - microservices-network
+
+  mfe-notifications:
+    build:
+      context: ./web-app/notifications-mfe
+      dockerfile: Dockerfile
+    container_name: mfe-notifications
+    ports:
+      - "5003:5003"
     networks:
       - microservices-network
 

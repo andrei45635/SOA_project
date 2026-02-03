@@ -1,0 +1,20 @@
+graph TB
+    subgraph "Order Management System - C4 Context Diagram"
+        User["👤 Customer<br/>(Person)<br/>Places orders, views notifications"]
+        Admin["👑 Admin<br/>(Person)<br/>Manages orders, views analytics"]
+        
+        subgraph "Order Management System"
+            System["🏢 Order Management System<br/>(Software System)<br/>Handles order processing,<br/>notifications, and analytics"]
+        end
+        
+        Email["📧 Email System<br/>(External System)<br/>Sends email notifications"]
+    end
+    
+    User -->|"Places orders,<br/>views status"| System
+    Admin -->|"Manages orders,<br/>views analytics"| System
+    System -->|"Sends order<br/>confirmations"| Email
+    
+    style User fill:#08427b,color:#fff
+    style Admin fill:#08427b,color:#fff
+    style System fill:#1168bd,color:#fff
+    style Email fill:#999999,color:#fff

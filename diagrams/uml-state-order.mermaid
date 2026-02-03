@@ -1,0 +1,47 @@
+stateDiagram-v2
+    [*] --> pending : Order Created
+    
+    pending --> confirmed : Admin confirms
+    pending --> cancelled : Customer/Admin cancels
+    
+    confirmed --> preparing : Kitchen starts
+    confirmed --> cancelled : Admin cancels
+    
+    preparing --> ready : Food ready
+    preparing --> cancelled : Admin cancels
+    
+    ready --> delivered : Order picked up
+    ready --> cancelled : Admin cancels
+    
+    delivered --> [*] : Complete
+    cancelled --> [*] : Terminated
+    
+    note right of pending
+        Initial state when order
+        is placed by customer
+    end note
+    
+    note right of confirmed
+        Order accepted by
+        restaurant/admin
+    end note
+    
+    note right of preparing
+        Kitchen is actively
+        preparing the order
+    end note
+    
+    note right of ready
+        Order is ready
+        for pickup/delivery
+    end note
+    
+    note right of delivered
+        Order successfully
+        delivered to customer
+    end note
+    
+    note left of cancelled
+        Order cancelled at
+        any stage before delivery
+    end note

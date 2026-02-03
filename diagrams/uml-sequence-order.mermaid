@@ -1,0 +1,63 @@
+sequenceDiagram
+    autonumber
+    participant U as 👤 User
+    participant Shell as 🏠 Shell MFE
+    participant Orders as 📦 Orders MFE
+    participant NGINX as ⚖️ NGINX
+    participant GW as 🚪 API Gateway
+    participant OS as 📋 Order Service
+    participant PG as 🐘 PostgreSQL
+    participant RMQ as 🐰 RabbitMQ
+    participant Kafka as 📡 Kafka
+    participant NS as 📨 Notification Service
+    participant Redis as ⚡ Redis
+    participant FC as 🔗 FaaS Connector
+    participant Email as 📧 Email Function
+
+    Note over U, Email: Order Placement Flow
+    
+    U->>Shell: Click "Orders"
+    Shell->>Orders: Load via Module Federation
+    Orders-->>U: Display Menu
+    
+    U->>Orders: Add items to cart
+    U->>Orders: Click "Place Order"
+    
+    Orders->>NGINX: POST /api/orders
+    NGINX->>GW: Route request (round-robin)
+    
+    GW->>GW: Verify JWT token
+    GW->>OS: POST /orders {items, userId}
+    
+    OS->>PG: INSERT order
+    PG-->>OS: Order created
+    
+    par Publish to Kafka
+        OS->>Kafka: Publish ORDER_CREATED event
+    and Publish to RabbitMQ
+        OS->>RMQ: Publish to order.events queue
+        OS->>RMQ: Publish to notification.queue
+        OS->>RMQ: Publish to email.queue
+    end
+    
+    OS-->>GW: 201 Created {order}
+    
+    par Notification Processing
+        RMQ->>NS: Consume notification.queue
+        NS->>Redis: PUBLISH notification channel
+        Redis->>GW: Pub/Sub notification
+        GW->>Shell: WebSocket push
+        Shell->>Orders: Update UI
+        Orders-->>U: Show "Order Created" toast
+    and Email Processing
+        RMQ->>FC: Consume email.queue
+        FC->>Email: HTTP POST /function
+        Email->>Email: Generate email (mock)
+        Email-->>FC: 200 OK
+    and Analytics Processing
+        Kafka->>Kafka: Store event for analytics-service
+    end
+    
+    GW-->>NGINX: Response
+    NGINX-->>Orders: 201 Created
+    Orders-->>U: Show order confirmation
